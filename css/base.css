@@ -1,0 +1,247 @@
+/* ============================================
+   宽带线索商机 - 基础样式
+   ============================================ */
+
+:root {
+  /* 品牌色 */
+  --cm-color-primary: #0072e3;        /* 移动蓝 */
+  --cm-color-primary-dark: #0060c0;
+  --cm-color-bg: #f5f6f8;
+  --cm-color-card: #ffffff;
+  --cm-color-text: #1f2329;
+  --cm-color-text-secondary: #6b7280;
+  --cm-color-text-placeholder: #9ca3af;
+  --cm-color-border: #e5e7eb;
+  --cm-color-danger: #e53935;
+  --cm-color-success: #2e9e5b;
+  --cm-color-warning: #f59e0b;
+
+  /* 徽标色 */
+  --cm-badge-gov: #5b8ff9;
+  --cm-badge-sme: #5ad8a6;
+  --cm-badge-ind: #f6bd16;
+  --cm-badge-home: #f08bb4;
+  --cm-badge-mobile: #00b3ff;
+  --cm-badge-unicom: #ff7d00;
+  --cm-badge-telecom: #2f7ad1;
+  --cm-badge-broadcast: #8a5cf6;
+
+  /* 布局 */
+  --cm-tabbar-height: 56px;
+  --cm-radius: 12px;
+  --cm-radius-sm: 8px;
+  --cm-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  --cm-shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.10);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC",
+    "HarmonyOS Sans", "Microsoft YaHei", "Segoe UI", sans-serif;
+  background: var(--cm-color-bg);
+  color: var(--cm-color-text);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  /* 禁止双击缩放 */
+  touch-action: manipulation;
+}
+
+button {
+  font-family: inherit;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: inherit;
+  color: inherit;
+}
+
+input, select, textarea {
+  font-family: inherit;
+  font-size: 16px;            /* >=16px 防止 iOS 聚焦缩放 */
+  color: var(--cm-color-text);
+  border: 1px solid var(--cm-color-border);
+  border-radius: var(--cm-radius-sm);
+  padding: 10px 12px;
+  width: 100%;
+  background: #fff;
+  outline: none;
+}
+
+input:focus, textarea:focus {
+  border-color: var(--cm-color-primary);
+}
+
+/* ============ 通用组件 ============ */
+
+/* 隐藏滚动条但可滚动 */
+.scroll-x {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.scroll-x::-webkit-scrollbar { display: none; }
+
+/* 徽标 */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  color: #fff;
+  white-space: nowrap;
+}
+.badge-gov { background: var(--cm-badge-gov); }
+.badge-sme { background: var(--cm-badge-sme); }
+.badge-ind { background: var(--cm-badge-ind); color: #333; }
+.badge-home { background: var(--cm-badge-home); }
+
+.badge-mobile { background: var(--cm-badge-mobile); }
+.badge-unicom { background: var(--cm-badge-unicom); }
+.badge-telecom { background: var(--cm-badge-telecom); }
+.badge-broadcast { background: var(--cm-badge-broadcast); }
+
+/* 卡片 */
+.card {
+  background: var(--cm-color-card);
+  border-radius: var(--cm-radius);
+  box-shadow: var(--cm-shadow);
+}
+
+/* 按钮 */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: var(--cm-radius-sm);
+  background: var(--cm-color-primary);
+  color: #fff;
+  font-weight: 600;
+  transition: opacity .15s;
+}
+.btn:active { opacity: .8; }
+.btn-block { width: 100%; }
+.btn-outline {
+  background: transparent;
+  color: var(--cm-color-primary);
+  border: 1.5px solid var(--cm-color-primary);
+}
+.btn-danger {
+  background: transparent;
+  color: var(--cm-color-danger);
+  border: 1.5px solid var(--cm-color-danger);
+}
+.btn-sm {
+  min-height: 32px;
+  padding: 0 12px;
+  font-size: 13px;
+  border-radius: 6px;
+}
+.btn[disabled] {
+  background: #d1d5db;
+  color: #fff;
+  cursor: not-allowed;
+}
+.btn-outline[disabled] {
+  background: transparent;
+  border-color: #d1d5db;
+  color: #d1d5db;
+}
+
+/* Toast */
+.toast {
+  position: fixed;
+  top: 20%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.78);
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  z-index: 3000;
+  max-width: 80%;
+  text-align: center;
+  animation: toastIn .2s ease-out;
+}
+@keyframes toastIn {
+  from { opacity: 0; transform: translate(-50%, -8px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* 确认弹窗（自定义） */
+.modal-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.modal-box {
+  background: #fff;
+  border-radius: 14px;
+  width: 100%;
+  max-width: 320px;
+  padding: 20px;
+  box-shadow: var(--cm-shadow-lg);
+}
+.modal-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  text-align: center;
+}
+.modal-body {
+  font-size: 14px;
+  color: var(--cm-color-text-secondary);
+  margin-bottom: 18px;
+  text-align: center;
+}
+.modal-actions {
+  display: flex;
+  gap: 12px;
+}
+.modal-actions .btn { flex: 1; }
+
+/* 空态 */
+.empty {
+  text-align: center;
+  padding: 60px 24px;
+  color: var(--cm-color-text-secondary);
+}
+.empty-icon { font-size: 56px; margin-bottom: 12px; }
+.empty-title { font-size: 16px; font-weight: 600; color: var(--cm-color-text); margin-bottom: 6px; }
+.empty-desc { font-size: 13px; }
+
+/* 顶部提醒条 */
+.banner {
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 13px;
+  padding: 8px 14px;
+  text-align: center;
+}
+.banner-danger {
+  background: #fce7e7;
+  color: var(--cm-color-danger);
+}
+
+/* 隐藏 */
+.hidden { display: none !important; }
