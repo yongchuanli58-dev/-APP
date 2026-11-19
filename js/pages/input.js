@@ -38,13 +38,15 @@
         '<div class="loc-info">' +
           (loc.address
             ? '<div class="loc-addr" id="locAddr">' + UI.esc(loc.address) + '</div>'
-            : '<div class="loc-addr" id="locAddr">未打卡定位</div>') +
+            : (loc.lng && loc.lat
+              ? '<div class="loc-addr" id="locAddr">已定位 ' + UI.esc(String(loc.lng)) + ',' + UI.esc(String(loc.lat)) + '</div>'
+              : '<div class="loc-addr" id="locAddr">未打卡定位</div>')) +
           '<div class="loc-meta" id="locMeta">' +
             (loc.locatedAt ? '打卡时间：' + TimeUtil.formatDateTime(loc.locatedAt) : '点击打卡获取当前位置') +
           '</div>' +
         '</div>' +
-        '<button class="btn btn-sm loc-btn' + (loc.address ? ' located' : '') + '" id="locBtn">' +
-          (loc.address ? '重定位' : '打卡') +
+        '<button class="btn btn-sm loc-btn' + ((loc.address || (loc.lng && loc.lat)) ? ' located' : '') + '" id="locBtn">' +
+          ((loc.address || (loc.lng && loc.lat)) ? '重定位' : '打卡') +
         '</button>' +
       '</div>' +
 
@@ -202,7 +204,8 @@
     btn.disabled = true;
     btn.textContent = '定位中…';
     AmapUtil.locate().then(function (r) {
-      document.getElementById('locAddr').textContent = r.address || ('已定位 ' + r.lng.toFixed(5) + ',' + r.lat.toFixed(5));
+      var locText = r.address || ('已定位 ' + r.lng.toFixed(5) + ',' + r.lat.toFixed(5));
+      document.getElementById('locAddr').textContent = r.address ? ('📍 ' + r.address) : locText;
       document.getElementById('locMeta').textContent = '打卡时间：' + TimeUtil.formatDateTime(r.locatedAt);
       btn.textContent = '重定位';
       btn.classList.add('located');

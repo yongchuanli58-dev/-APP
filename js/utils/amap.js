@@ -52,20 +52,64 @@
   }
 
   /**
-   * 定位：返回 Promise<{address, lng, lat, locatedAt}>
-   * 高德优先，失败降级浏览器 Geolocation，仍失败 rethrow
+   * 逆地理编码：用高德 JS API 把经纬度转成地址
+   * 返回 Promise<string>，失败返回 ''
+   */
+  function reverseGeocode(lng, lat) {
+    return new Promise(function (resolve) {
+      if (typeof window === 'undefined' || !window.AMap || !window.AMap.Geocoder) {
+        resolve('');
+        return;
+      }
+      try {
+        var geocoder = new window.AMap.Geocoder({ extensions: 'all' });
+        geocoder.getAddress([lng, lat], function (status, result) {
+          if (status === 'complete' && result && result.regeocode) {
+            resolve(compactAddress(result.regeocode));
+          } else {
+            resolve('');
+          }
+        });
+      } catch (e) {
+        resolve('');
+      }
+    });
+  }
+
+  /** 精简地址：去掉重复的「省」「市」层级冗余，保留 省(去后缀)+市/区+街道+门牌 */
+  function compactAddress(regeocode) {
+    try {
+      var a = regeocode.addressComponent || {};
+      var parts = [];
+      if (a.province) parts.push(String(a.province).replace(/省$/, ''));
+      if (a.city && a.city !== a.province) parts.push(String(a.city).replace(/市$/, ''));
+      if (a.district) parts.push(String(a.district));
+      // 拼接街道 + 编号
+      var road = a.streetNumber && a.streetNumber.street ? String(a.streetNumber.street) : '';
+      var num = a.streetNumber && a.streetNumber.number ? String(a.streetNumber.number) : '';
+      if (road) parts.push(road + num);
+      var addr = parts.join('');
+      // 空兜底：formattedAddress 原样
+      if (!addr && regeocode.formattedAddress) addr = String(regeocode.formattedAddress);
+      return addr;
+    } catch (e) {
+      return (regeocode && regeocode.formattedAddress) ? String(regeocode.formattedAddress) : '';
+    }
+  }
+
+  /** 定位：返回 Promise<{address, lng, lat, locatedAt}>
+   * 高德优先，失败降级浏览器 Geolocation（再用高德 Geocoder 补地址），仍失败 rethrow
    */
   function locate() {
     return new Promise(function (resolve, reject) {
       var locatedAt = new Date().toISOString();
-      var finish = function (lng, lat, address) {
-        resolve({
-          lng: lng,
-          lat: lat,
-          address: address || '',
-          locatedAt: locatedAt,
-          source: typeof window !== 'undefined' && window.AMap ? 'amap' : 'browser'
-        });
+      var finish = function (lng, lat, address, source) {
+        // 地址为空时，尝试用高德 Geocoder 补全（浏览器兜底时尤其重要）
+        var finalize = function (addr) {
+          resolve({ lng: lng, lat: lat, address: (addr || address || ''), locatedAt: locatedAt, source: source });
+        };
+        if (address) { finalize(address); return; }
+        reverseGeocode(lng, lat).then(finalize);
       };
 
       // 尝试高德
@@ -84,14 +128,13 @@
             geo.getCurrentPosition(function (status, result) {
               if (status === 'complete' && result && result.position) {
                 var p = result.position;
-                var address = result.formattedAddress ||
-                  (result.addressComponent ? (
-                    (result.addressComponent.province || '') +
-                    (result.addressComponent.city || '') +
-                    (result.addressComponent.district || '') +
-                    (result.addressComponent.street || '')
-                  ) : '');
-                finish(p.getLng(), p.getLat(), address);
+                var address = '';
+                if (result.formattedAddress) address = String(result.formattedAddress);
+                else if (result.addressComponent) {
+                  var a = result.addressComponent;
+                  address = (a.province || '') + (a.city || '') + (a.district || '') + (a.street || '');
+                }
+                finish(p.getLng(), p.getLat(), address, 'amap');
               } else {
                 tryBrowser();
               }
@@ -110,7 +153,8 @@
         }
         navigator.geolocation.getCurrentPosition(
           function (pos) {
-            finish(pos.coords.longitude, pos.coords.latitude, '');
+            // 浏览器只给经纬度，地址由高德 Geocoder 补全
+            finish(pos.coords.longitude, pos.coords.latitude, '', 'browser');
           },
           function (err) {
             reject(new Error('定位失败，请点击重试或手动填写地址'));
@@ -160,6 +204,8 @@
   return {
     loadSDK: loadSDK,
     locate: locate,
-    openNavigation: openNavigation
+    openNavigation: openNavigation,
+    reverseGeocode: reverseGeocode,
+    compactAddress: compactAddress
   };
 });

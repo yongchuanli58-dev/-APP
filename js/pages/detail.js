@@ -58,7 +58,8 @@
 
       '<div class="group-card">' +
         '<div class="lead-meta" style="font-size:14px;margin-bottom:4px">位置信息</div>' +
-        infoRow('打卡地址', loc.address || '未打卡定位') +
+        infoRow('打卡地址', loc.address ||
+          (loc.lng && loc.lat ? ('已定位 ' + loc.lng + ',' + loc.lat) : '未打卡定位')) +
         infoRow('定位时间', loc.locatedAt ? TimeUtil.formatDateTime(loc.locatedAt) : '—') +
       '</div>' +
 
@@ -70,6 +71,7 @@
       '<div style="display:flex;gap:10px;margin-bottom:40px">' +
         '<button class="btn btn-outline" id="callBtn">📞 拨打客户</button>' +
         '<button class="btn btn-outline" id="navBtn">🧭 点击导航</button>' +
+        '<button class="btn btn-outline" id="shareBtn">📤 分享</button>' +
       '</div>' +
 
       '<div style="display:flex;gap:10px">' +
@@ -103,6 +105,47 @@
       UI.confirm({ title: '导航前往', body: '使用高德导航前往「' + UI.esc(lead.customerName) + '」？', confirmText: '导航' }).then(function (ok) {
         if (ok) AmapUtil.openNavigation({ lng: loc.lng, lat: loc.lat, name: lead.customerName });
       });
+    });
+
+    // 分享本条商机
+    var copyText = function () {
+      var loc = lead.location || {};
+      var lines = [
+        '【宽带商机】' + (lead.customerName || ''),
+        '电话：' + (lead.phone || '—'),
+        '客户类型：' + (UI.clientTypeFull(lead.clientType) || ''),
+        '在用运营商：' + (lead.carriers && lead.carriers.length ? lead.carriers.join('、') : '未登记'),
+        '套餐：' + (lead.packageName ? lead.packageName : '—') + (lead.packageFee != null ? ' ' + lead.packageFee + '元/月' : ''),
+        '地址：' + (loc.address || '未打卡定位')
+      ];
+      return lines.join('\n');
+    };
+    document.getElementById('shareBtn').addEventListener('click', function () {
+      if (navigator.share) {
+        navigator.share({
+          title: '商机：' + (lead.customerName || ''),
+          text: copyText(),
+          url: (typeof location !== 'undefined' && location.href) || ''
+        }).catch(function () { /* 用户取消，不提示 */ });
+      } else {
+        // 降级：复制商机文本
+        var input = document.createElement('textarea');
+        input.value = copyText();
+        document.body.appendChild(input);
+        input.select();
+        var ok = false;
+        try { ok = document.execCommand('copy'); } catch (e) {}
+        input.remove();
+        if (ok) UI.toast('商机信息已复制');
+        else {
+          UI.confirm({
+            title: '分享商机',
+            body: copyText().replace(/\n/g, ' ')
+              + '（当前环境不支持系统分享，可长按复制或使用系统截图发送）',
+            confirmText: '知道了'
+          });
+        }
+      }
     });
     document.getElementById('editBtn').addEventListener('click', function () { Router.go('input', { id: id }); });
     document.getElementById('delBtn').addEventListener('click', function () {
