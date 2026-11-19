@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>定位诊断</title>
+  <style>
+    body { font-family: -apple-system, 'Segoe UI', Microsoft YaHei, sans-serif; max-width: 640px; margin: 0 auto; padding: 16px; background: #f5f6f8; }
+    h1 { font-size: 20px; }
+    .card { background: #fff; border-radius: 10px; padding: 14px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+    .card .title { font-weight: bold; margin-bottom: 8px; }
+    .row { font-size: 14px; line-height: 1.8; word-break: break-all; }
+    .ok { color: #16a34a; font-weight: 600; }
+    .err { color: #dc2626; font-weight: 600; }
+    .info { color: #64748b; }
+    button { padding: 10px 22px; border: none; border-radius: 8px; background: #1677ff; color: #fff; font-size: 15px; margin-bottom: 16px; }
+    pre { background: #111827; color: #e5e7eb; padding: 10px; border-radius: 8px; overflow-x: auto; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <h1>🔍 定位诊断工具</h1>
+  <button id="runBtn">▶ 开始诊断</button>
+  <div id="out"></div>
+
+  <script src="config/amap-key.js"></script>
+  <script>
+    var out = document.getElementById('out');
+    function card(title, rows) {
+      out.insertAdjacentHTML('beforeend',
+        '<div class="card"><div class="title">' + title + '</div>' + rows + '</div>');
+    }
+    function row(label, val, cls) {
+      var c = cls ? ' class="' + cls + '"' : '';
+      return '<div class="row"><span class="info">' + label + '</span>' + c + '>' + val + '</div>';
+    }
+
+    document.getElementById('runBtn').addEventListener('click', function () {
+      out.innerHTML = '';
+      var cfg = window.AMAP_CONFIG || {};
+      card('配置', row('高德 Key', cfg.key || '未配置', cfg.key && cfg.key.indexOf('替换') < 0 ? 'ok' : 'err') +
+        row('安全密钥', cfg.securityJsCode ? ('已填（长度 ' + String(cfg.securityJsCode).length + '）') : '未填', cfg.securityJsCode && cfg.securityJsCode.indexOf('替换') < 0 ? 'ok' : 'err'));
+
+      // 1. 加载高德 SDK
+      var s = document.createElement('script');
+      var base = 'https://webapi.amap.com/maps?v=2.0&key=' + encodeURIComponent(cfg.key || '');
+      if (cfg.securityJsCode && cfg.securityJsCode.indexOf('替换') < 0) {
+        window._AMapSecurityConfig = { securityJsCode: cfg.securityJsCode };
+      }
+      var sdkCard = card('第 1 步 · 加载高德 JS API', row('状态', '加载中…'));
+      s.onload = function () {
+        out.innerHTML = ''; card('第 1 步 · 加载高德 JS API', row('状态', '成功 ✓ window.AMap 已存在', 'ok'));
+        check();
+      };
+      s.onerror = function () {
+        out.innerHTML = '';
+        card('第 1 步 · 加载高德 JS API', row('状态', '失败 ✗（脚本加载不了）', 'err') +
+          row('可能原因', '① Key 白名单未含当前域名（报 INVALID_USER_DOMAIN）<br>② 安全密钥 jscode 错误（报 INVALID_USER_SIGNATURE）<br>③ 网络无法访问 webapi.amap.com'));
+      };
+      s.src = base;
+      document.head.appendChild(s);
+    });
+
+    function check() {
+      // 2. 逆地理编码
+      card('第 2 步 · 逆地理编码（坐标→地址）', row('状态', '测试中…'));
+      var done = false;
+      try {
+        AMap.plugin('AMap.Geocoder', function () {
+          if (done) return; done = true;
+          var gc = new AMap.Geocoder({ extensions: 'all' });
+          // 用贵阳市中心或默认坐标测试
+          gc.getAddress([106.6301, 26.6505], function (st, rs) {
+            var addrBox = document.querySelector('.card:nth-of-type(2)');
+            if (st === 'complete' && rs && rs.regeocode) {
+              card('第 2 步 · 逆地理编码（坐标→地址）',
+                row('状态', '成功 ✓', 'ok') +
+                row('地址', rs.regeocode.formattedAddress || rs.regeocode.addressComponent.district, 'ok'));
+            } else {
+              card('第 2 步 · 逆地理编码', row('状态', '失败 ✗', 'err') + row('返回', JSON.stringify([st, rs] || '')));
+            }
+          });
+        });
+      } catch (e) {
+        card('第 2 步 · 逆地理编码', row('状态', '异常 ✗', 'err') + row('错误', String(e && e.message || e)));
+      }
+
+      // 3. 浏览器定位
+      card('第 3 步 · 浏览器定位', row('状态', '请求授权中…'));
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function (pos) {
+          card('第 3 步 · 浏览器定位', row('状态', '成功 ✓', 'ok') +
+            row('坐标', pos.coords.longitude + ',' + pos.coords.latitude, 'ok') +
+            row('说明', '坐标能拿到；地址由第 2 步逆地理补全'));
+        }, function (e) {
+          card('第 3 步 · 浏览器定位', row('状态', '失败 ✗', 'err') + row('原因', e && e.message || String(e)));
+        }, { enableHighAccuracy: true, timeout: 10000 });
+      } else {
+        card('第 3 步 · 浏览器定位', row('状态', '不支持 ✗', 'err'));
+      }
+    }
+  </script>
+</body>
+</html>
