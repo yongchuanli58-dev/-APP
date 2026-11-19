@@ -16,6 +16,8 @@
   var LOADED = false;
   var LOADING = false;
   var callbacks = [];
+  /** 最近一次 SDK 加载状态（诊断用） */
+  var lastError = '';
 
   /** 动态加载高德 JS API 脚本（v2.0，带安全密钥） */
   function loadSDK() {
@@ -26,7 +28,8 @@
       var cfg = (typeof window !== 'undefined' && window.AMAP_CONFIG) || {};
       if (!cfg.key || String(cfg.key).indexOf('替换') >= 0) {
         LOADING = false;
-        reject(new Error('未配置高德 Key'));
+        lastError = '未配置高德 Key';
+        reject(new Error(lastError));
         return;
       }
       var win = window;
@@ -39,13 +42,15 @@
       script.onload = function () {
         LOADED = true;
         LOADING = false;
+        lastError = '';
         callbacks.forEach(function (cb) { cb(); });
         callbacks = [];
         resolve();
       };
       script.onerror = function () {
         LOADING = false;
-        reject(new Error('高德地图脚本加载失败'));
+        lastError = '高德脚本加载失败（网络/域名被拦截，请确认 key 白名单）';
+        reject(new Error(lastError));
       };
       document.head.appendChild(script);
     });
@@ -53,26 +58,29 @@
 
   /**
    * 逆地理编码：用高德 JS API 把经纬度转成地址
+   * 注意：Geocoder 是插件，必须先 AMap.plugin 加载再 new，否则必然失败
    * 返回 Promise<string>，失败返回 ''
    */
   function reverseGeocode(lng, lat) {
     return new Promise(function (resolve) {
-      if (typeof window === 'undefined' || !window.AMap || !window.AMap.Geocoder) {
+      if (typeof window === 'undefined' || !window.AMap) {
         resolve('');
         return;
       }
-      try {
-        var geocoder = new window.AMap.Geocoder({ extensions: 'all' });
-        geocoder.getAddress([lng, lat], function (status, result) {
-          if (status === 'complete' && result && result.regeocode) {
-            resolve(compactAddress(result.regeocode));
-          } else {
-            resolve('');
-          }
-        });
-      } catch (e) {
-        resolve('');
-      }
+      window.AMap.plugin('AMap.Geocoder', function () {
+        try {
+          var geocoder = new window.AMap.Geocoder({ extensions: 'all' });
+          geocoder.getAddress([lng, lat], function (status, result) {
+            if (status === 'complete' && result && result.regeocode) {
+              resolve(compactAddress(result.regeocode));
+            } else {
+              resolve('');
+            }
+          });
+        } catch (e) {
+          resolve('');
+        }
+      });
     });
   }
 
@@ -118,13 +126,14 @@
           tryBrowser();
           return;
         }
-        try {
-          var geo = new window.AMap.Geolocation({
-            enableHighAccuracy: true,
-            timeout: 10000,
-            zoomToAccuracy: true
-          });
-          window.AMap.plugin('AMap.Geolocation', function () {
+        // 先加载插件，再 new Geolocation（高德 2.0 强制）
+        window.AMap.plugin('AMap.Geolocation', function () {
+          try {
+            var geo = new window.AMap.Geolocation({
+              enableHighAccuracy: true,
+              timeout: 10000,
+              zoomToAccuracy: true
+            });
             geo.getCurrentPosition(function (status, result) {
               if (status === 'complete' && result && result.position) {
                 var p = result.position;
@@ -139,10 +148,10 @@
                 tryBrowser();
               }
             });
-          });
-        } catch (e) {
-          tryBrowser();
-        }
+          } catch (e) {
+            tryBrowser();
+          }
+        });
       };
 
       // 浏览器 Geolocation 兜底
@@ -157,7 +166,11 @@
             finish(pos.coords.longitude, pos.coords.latitude, '', 'browser');
           },
           function (err) {
-            reject(new Error('定位失败，请点击重试或手动填写地址'));
+            var msg = '定位失败';
+            if (err && err.code === 1) msg = '定位被拒绝，请在浏览器设置中允许定位';
+            else if (err && err.code === 2) msg = '无法获取位置信号，请到开阔处重试';
+            else if (err && err.code === 3) msg = '定位超时，请重试';
+            reject(new Error(msg));
           },
           { enableHighAccuracy: true, timeout: 10000 }
         );
@@ -206,6 +219,7 @@
     locate: locate,
     openNavigation: openNavigation,
     reverseGeocode: reverseGeocode,
-    compactAddress: compactAddress
+    compactAddress: compactAddress,
+    lastError: function () { return lastError; }
   };
 });
