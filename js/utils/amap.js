@@ -84,22 +84,24 @@
     });
   }
 
-  /** 精简地址：去掉重复的「省」「市」层级冗余，保留 省(去后缀)+市/区+街道+门牌 */
+  /**
+   * 地址整理：优先返回高德完整地址（含街道/小区/POI），丢失时用组件拼接兜底。
+   * 高德 formattedAddress 形如「贵州省贵阳市观山湖区金华园街道南苑路51号金华园南园」，
+   * 包含完整道路与兴趣点，必须优先采用；组件拼接仅用于极端兜底。
+   */
   function compactAddress(regeocode) {
     try {
+      if (!regeocode) return '';
+      // 1. 完整地址优先（含街道/小区）
+      if (regeocode.formattedAddress) return String(regeocode.formattedAddress);
+      // 2. 兜底拼接省市区
       var a = regeocode.addressComponent || {};
       var parts = [];
-      if (a.province) parts.push(String(a.province).replace(/省$/, ''));
-      if (a.city && a.city !== a.province) parts.push(String(a.city).replace(/市$/, ''));
+      if (a.province) parts.push(String(a.province));
+      if (a.city && a.city !== a.province) parts.push(String(a.city));
       if (a.district) parts.push(String(a.district));
-      // 拼接街道 + 编号
-      var road = a.streetNumber && a.streetNumber.street ? String(a.streetNumber.street) : '';
-      var num = a.streetNumber && a.streetNumber.number ? String(a.streetNumber.number) : '';
-      if (road) parts.push(road + num);
-      var addr = parts.join('');
-      // 空兜底：formattedAddress 原样
-      if (!addr && regeocode.formattedAddress) addr = String(regeocode.formattedAddress);
-      return addr;
+      if (a.township) parts.push(String(a.township));
+      return parts.join('');
     } catch (e) {
       return (regeocode && regeocode.formattedAddress) ? String(regeocode.formattedAddress) : '';
     }
