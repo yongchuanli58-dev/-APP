@@ -3,12 +3,13 @@
  * -------------------------------------------------
  * 策略：
  *  - 核心静态资源（页面/样式/脚本）安装时预缓存
- *  - 运行时对命中缓存的静态资源优先返回缓存（快速），并在后台刷新
- *  - index.html 本身网络优先（确保拿到最新内容后触发新版本）
- *  - 高德 CDN 跨域资源：缓存失败不影响（network-only）
+ *  - 页面/JS/CSS 一律「网络优先，离线兜底」，保证每次打开都拿到最新版本
+ *    （业务 JS 更新频繁，cache-first 会导致上传新代码后用户仍看到旧界面）
+ *  - 图标等稳定资源缓存优先（快速 + 离线可用）
+ *  - 高德 CDN 跨域资源：网络直连，不缓存
  * 版本号：改动任何静态资源时 +1，触发自动更新
  */
-const CACHE = 'bx-sj-v2';
+const CACHE = 'bx-sj-v3';
 
 const CORE = [
   './',
@@ -73,14 +74,19 @@ self.addEventListener('fetch', function (event) {
   // 仅处理同源资源；跨域（高德 CDN）直接放行
   if (url.origin !== location.origin) return;
 
-  // 导航请求（页面）：网络优先，失败用缓存兜底（离线可用）
-  if (req.mode === 'navigate') {
+  const isDoc = req.mode === 'navigate';
+  const isAppCode = /\.(js|css)$/.test(url.pathname);
+
+  // 页面 / JS / CSS：网络优先，失败用缓存兜底（离线可用）
+  // 这样业务代码每次更新上传后，打开页面即是最新，不被缓存锁死
+  if (isDoc || isAppCode) {
     event.respondWith(
       fetch(req)
         .then(function (res) {
-          // 顺手更新缓存
-          const copy = res.clone();
-          caches.open(CACHE).then(function (c) { c.put(req, copy); });
+          if (res && res.ok && !url.pathname.includes('diag')) {
+            const copy = res.clone();
+            caches.open(CACHE).then(function (c) { c.put(req, copy); });
+          }
           return res;
         })
         .catch(function () {
@@ -92,7 +98,7 @@ self.addEventListener('fetch', function (event) {
     return;
   }
 
-  // 静态资源：缓存优先，成功后后台刷新
+  // 其它静态资源（图标/manifest 等）：缓存优先，成功后后台刷新
   event.respondWith(
     caches.match(req).then(function (hit) {
       if (hit) {
@@ -103,12 +109,12 @@ self.addEventListener('fetch', function (event) {
           }
           return res;
         }).catch(function () {});
-        // 返回缓存，同时用 Promise 触发后台更新（不阻塞）
+        // 触发后台刷新，但先返回缓存
         refresh;
         return hit;
       }
       return fetch(req).then(function (res) {
-        if (res && res.ok && url.pathname.indexOf('diag') === -1) {
+        if (res && res.ok && !url.pathname.includes('diag')) {
           const copy = res.clone();
           caches.open(CACHE).then(function (c) { c.put(req, copy); });
         }
