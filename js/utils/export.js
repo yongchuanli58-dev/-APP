@@ -45,7 +45,7 @@
   /** 表头（与 PRD 6.1 对齐） */
   function header() {
     return ['客户名称', '客户类型', '在用运营商', '套餐名称', '套餐金额(元/月)',
-      '联系电话', '性别', '资费水平', '回流意愿', '地址', '定位时间', '录入时间'];
+      '联系电话', '性别', '回流意愿', '备注', '地址', '定位时间', '录入时间'];
   }
 
   /** 单条商机 → 行数组 */
@@ -58,8 +58,8 @@
       l.packageFee != null ? l.packageFee : '',
       l.phone || '',
       l.gender || '',
-      l.feeLevel || '',
       l.returnIntent || '',
+      l.remark || '',
       (l.location && l.location.address) || '',
       formatTime(l.location && l.location.locatedAt),
       formatTime(l.createTime)

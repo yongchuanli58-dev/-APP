@@ -52,8 +52,8 @@
         '<div class="lead-meta" style="font-size:14px;margin-bottom:4px">客户信息</div>' +
         infoRow('联系电话', lead.phone, '📞') +
         infoRow('性别', UI.genderText(lead.gender)) +
-        infoRow('资费水平', UI.feeLevelText(lead.feeLevel)) +
         infoRow('回流意愿', UI.returnIntentText(lead.returnIntent)) +
+        (lead.remark ? infoRow('备注', lead.remark, '📝') : '') +
       '</div>' +
 
       '<div class="group-card">' +

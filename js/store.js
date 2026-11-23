@@ -159,6 +159,9 @@
     l.customerName = typeof raw.customerName === 'string' ? String(raw.customerName).slice(0, 80) : '';
     l.phone = typeof raw.phone === 'string' ? String(raw.phone).trim().slice(0, 20) : '';
     l.gender = GENDERS.indexOf(raw.gender) >= 0 ? raw.gender : '';
+    // 备注（自由文本，可选）
+    l.remark = typeof raw.remark === 'string' ? String(raw.remark).slice(0, 500) : '';
+    // 资费水平：已从录入页移除，保留字段仅为兼容历史数据
     l.feeLevel = FEE_LEVELS.indexOf(raw.feeLevel) >= 0 ? raw.feeLevel : '';
     l.returnIntent = RETURN_INTENTS.indexOf(raw.returnIntent) >= 0 ? raw.returnIntent : '';
 

@@ -90,11 +90,6 @@
     }).join(' ');
   }
 
-  /** 资费水平中文 */
-  function feeLevelText(v) {
-    return v ? v : '未填';
-  }
-
   /** 回流意愿中文 */
   function returnIntentText(v) {
     return v ? v : '未填';
@@ -121,7 +116,6 @@
     confirm: confirm,
     clientTypeBadge: clientTypeBadge,
     carrierBadges: carrierBadges,
-    feeLevelText: feeLevelText,
     returnIntentText: returnIntentText,
     genderText: genderText,
     clientTypeFull: clientTypeFull

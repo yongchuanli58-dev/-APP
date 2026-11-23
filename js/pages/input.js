@@ -27,8 +27,8 @@
         : '<span class="opt-card" data-cv="' + c + '"><span class="ck"></span>' + c + '</span>';
     };
     var g = editing ? (editing.gender || '') : '';
-    var fl = editing ? (editing.feeLevel || '') : '';
     var ri = editing ? (editing.returnIntent || '') : '';
+    var remark = editing ? (editing.remark || '') : '';
     var loc = (editing && editing.location) || { address: '', locatedAt: '' };
 
     return '<div class="page">' +
@@ -100,16 +100,14 @@
           '</div>' +
         '</div>' +
         '<div class="form-row">' +
-          '<div class="form-label">资费水平</div>' +
-          '<div class="seg" id="feeLevelGroup">' +
-            segCard('低', fl, '低(<50)') + segCard('中', fl, '中(50-200)') + segCard('高', fl, '高(>200)') +
-          '</div>' +
-        '</div>' +
-        '<div class="form-row">' +
           '<div class="form-label">回流意愿</div>' +
           '<div class="seg" id="returnIntentGroup">' +
             segCard('强烈', ri) + segCard('一般', ri) + segCard('暂无', ri) +
           '</div>' +
+        '</div>' +
+        '<div class="form-row">' +
+          '<div class="form-label">备注</div>' +
+          '<textarea id="remark" rows="3" maxlength="500" placeholder="可填写重要客户信息，如：客户偏好、预约时间、跟进要点等">' + UI.esc(remark) + '</textarea>' +
         '</div>' +
       '</div>' +
 
@@ -158,7 +156,7 @@
       customerName: document.getElementById('customerName').value.trim(),
       phone: document.getElementById('phone').value.trim(),
       gender: document.querySelector('#genderGroup .selected') ? document.querySelector('#genderGroup .selected').getAttribute('data-val') : '',
-      feeLevel: document.querySelector('#feeLevelGroup .selected') ? document.querySelector('#feeLevelGroup .selected').getAttribute('data-val') : '',
+      remark: document.getElementById('remark').value.trim(),
       returnIntent: document.querySelector('#returnIntentGroup .selected') ? document.querySelector('#returnIntentGroup .selected').getAttribute('data-val') : ''
     };
   }
@@ -178,8 +176,8 @@
       if (!t) return;
       t.classList.toggle('selected');
     });
-    // 性别/资费水平/回流意愿 单选组
-    ['genderGroup', 'feeLevelGroup', 'returnIntentGroup'].forEach(function (gid) {
+    // 性别/回流意愿 单选组
+    ['genderGroup', 'returnIntentGroup'].forEach(function (gid) {
       var g = document.getElementById(gid);
       g.addEventListener('click', function (e) {
         var t = e.target.closest('[data-val]');
