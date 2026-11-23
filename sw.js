@@ -8,7 +8,7 @@
  *  - 高德 CDN 跨域资源：缓存失败不影响（network-only）
  * 版本号：改动任何静态资源时 +1，触发自动更新
  */
-const CACHE = 'bx-sj-v1';
+const CACHE = 'bx-sj-v2';
 
 const CORE = [
   './',
