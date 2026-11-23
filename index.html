@@ -8,6 +8,13 @@
   <meta name="theme-color" content="#0072e3">
   <meta name="description" content="宽带线索商机——一线师傅专用的商机收集与统计工具">
   <title>宽带线索商机</title>
+  <!-- PWA 应用清单与图标 -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" href="assets/icon-192.png">
+  <link rel="apple-touch-icon" href="assets/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="商机">
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/layout.css">
   <link rel="stylesheet" href="css/pages.css">
@@ -56,5 +63,15 @@
   <script src="js/pages/share.js"></script>
   <script src="js/pages/guide.js"></script>
   <script src="js/app.js"></script>
+  <!-- PWA Service Worker 注册（仅 https 或 localhost 生效，静默失败不影响页面） -->
+  <script>
+    if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('./sw.js').catch(function () {
+          /* 忽略：不支持或非 https 环境不影响使用 */
+        });
+      });
+    }
+  </script>
 </body>
 </html>
